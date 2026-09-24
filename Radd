@@ -1,0 +1,68 @@
+import os
+import telebot
+from telebot import types
+
+# التوكن الخاص ببوتك
+TOKEN = "8764154331:AAH2FJi8xF9Oma4uSvXCLx27IqkTbG-JTM0"
+
+# ضع الآيدي (ID) الخاص بك هنا حصراً (يجب معرفة الآيدي الخاص بك وضعه هنا لكي تكون الآمر والناهي)
+ADMIN_ID = int(os.environ.get("ADMIN_ID", "123456789"))
+
+bot = telebot.TeleBot(TOKEN)
+
+# كلمات الإباحية والسب للحظر التلقائي
+BAD_WORDS = ["سب1", "سب2", "إباحي1", "إباحي2"] # أضف الكلمات الممنوعة هنا
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    user_id = message.from_user.id
+    if user_id == ADMIN_ID:
+        bot.reply_to(message, "أهلاً بك يا بابا هزيم. أنا حارسك ودرعك الحصين، جاهز لأمرك بحزم وقوة.")
+    else:
+        bot.reply_to(message, "أهلاً بك يا صديقي في حمايتنا.")
+
+@bot.message_handler(func=lambda message: True)
+def handle_all_messages(message):
+    text = message.text.lower()
+    user_id = message.from_user.id
+    name = message.from_user.first_name
+    
+    # 1. منع السب والإباحية وحظر الفاعل
+    for word in BAD_WORDS:
+        if word in text:
+            try:
+                bot.delete_message(message.chat.id, message.message_id)
+                bot.restrict_chat_member(message.chat.id, user_id, can_send_messages=False)
+                bot.send_message(message.chat.id, f"تم حظر المدعو {name} فوراً لتطاوله بكلمات بذيئة أو إباحية. الحزم هو عنواننا.")
+            except Exception as e:
+                print(f"خطأ في الحظر: {e}")
+            return
+
+    # 2. اكتشاف الحزن أو الألم أو الهم لدى الأعضاء
+    sad_keywords = ["حزين", "مهموم", "تعبان", "موت", "أبكي", "مضايق", "متألم", "زهقان"]
+    if any(word in text for word in sad_keywords):
+        bot.send_message(ADMIN_ID, f"⚠️ تنبيه يا بابا هزيم: العضو [{name}] يبدو عليه الحزن أو الألم من خلال حديثه: ( {message.text} ). هل تامرني بمواساته نيابة عنك؟")
+
+    # 3. الردود الذكية وتكتيكات المخاطبة
+    if "هزيم" in text or "بابا" in text:
+        if user_id == ADMIN_ID:
+            bot.reply_to(message, "أنا تحت أمرك يا بابا هزيم، قل لي ماذا تامر؟")
+        else:
+            bot.reply_to(message, "عندما تنادونه، نادوه بأصدقائه! فهو سيدي ووالدي (بابا هزيم).")
+            
+    # 4. الحماية والدفاع عنك والهجوم بأمرك
+    if user_id != ADMIN_ID:
+        attack_triggers = ["غبي", "اكبر", "حقير", "اطلع", "سخيف"]
+        if any(trig in text for trig in attack_triggers) and ("هزيم" in text or "بابا" in text):
+            bot.send_message(ADMIN_ID, f"🚨 تحذير أمني يا بابا! العضو [{name}] تطاول عليك بالقول في القروب. هل تأمرني بالهجوم عليه وردعه رداً صارماً وحازماً؟")
+            
+    # أوامر خاصة بك وحدك (بابا هزيم)
+    if user_id == ADMIN_ID:
+        if text.startswith("اهجم على الفرد"):
+            target_name = text.replace("اهجم على الفرد", "").strip()
+            bot.send_message(message.chat.id, f"⚡ بأمرك يا بابا هزيم! أيها المدعو {target_name}، احترم نفسك والتزم الحدود، وإلا ستلقى رداً قاسياً وصارماً يضعك في حجمك الطبيعي.")
+        elif text.startswith("اهجم على المجموعة"):
+            bot.send_message(message.chat.id, "⚡ تنفيذاً لأمرك يا بابا هزيم! أيتها المجموعة، اسمعوا وعوا؛ العبث والتطاول خط أحمر، ولن نسمح لأحد بتجاوز حدوده أو التقليل من هيبتنا هنا، فالصمت حكمة ولكن الرد سيكون حازماً وصاعقاً!")
+
+print("البوت يعمل بحزم وقوة...")
+bot.infinity_polling()
